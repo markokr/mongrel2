@@ -144,8 +144,8 @@ static int ssl_do_handshake(IOBuf *iob)
     check(!iob->handshake_performed, "ssl_do_handshake called unnecessarily");
     while((rcode = ssl_handshake(&iob->ssl)) != 0) {
 
-        check(rcode == POLARSSL_ERR_NET_WANT_READ
-                || rcode == POLARSSL_ERR_NET_WANT_WRITE, "Handshake failed with error code: %d", rcode);
+        check_ssl(rcode == POLARSSL_ERR_NET_WANT_READ || rcode == POLARSSL_ERR_NET_WANT_WRITE,
+                  rcode, "Handshake failed");
     }
     iob->handshake_performed = 1;
     return 0;
@@ -162,13 +162,13 @@ static ssize_t ssl_send(IOBuf *iob, char *buffer, int len)
 
     if(!iob->handshake_performed) {
         int rcode = ssl_do_handshake(iob);
-        check(rcode == 0, "SSL handshake failed: %d", rcode);
+        check_ssl(rcode == 0, rcode, "SSL handshake failed: %d", rcode);
     }
 
     for(sent = 0; len > 0; buffer += sent, len -= sent, total += sent) {
         sent = ssl_write(&iob->ssl, (const unsigned char*) buffer, len);
 
-        check(sent != -1, "Error sending SSL data.");
+        check_ssl(sent >= 0, sent, "Error sending SSL data.");
         check(sent <= len, "Buffer overflow. Too much data sent by ssl_write");
 
         // make sure we don't hog the process trying to stream out

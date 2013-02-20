@@ -40,6 +40,8 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "polarssl/error.h"
+
 void dbg_set_log(FILE *log_file);
 FILE *dbg_get_log();
 void fprintf_with_timestamp(FILE *log_file, const char *format, ...);
@@ -70,6 +72,13 @@ void fprintf_with_timestamp(FILE *log_file, const char *format, ...);
 #endif
 
 #define check(A, M, ...) if(!(A)) { log_err(M, ##__VA_ARGS__); errno=0; goto error; }
+
+#define check_ssl(A, RC, M, ...) if(!(A)) { \
+    char buf[128]; \
+    error_strerror(RC, buf, sizeof(buf)); \
+    log_err(M " [%s]", RC, ##__VA_ARGS__, buf); \
+    errno=0; \
+    goto error; }
 
 #define sentinel(M, ...)  { log_err(M, ##__VA_ARGS__); errno=0; goto error; }
 
