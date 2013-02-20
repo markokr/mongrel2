@@ -117,8 +117,12 @@ static int Server_load_ciphers(Server *srv, bstring ssl_ciphers_val)
             ciphers[i] = TLS_RSA_WITH_CAMELLIA_256_CBC_SHA;
         else if(biseqcstr(cipher, "SSL_EDH_RSA_CAMELLIA_256_SHA"))
             ciphers[i] = TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA;
-        else
-            sentinel("Unrecognized cipher: %s", bdata(cipher));
+        else {
+            /* Let PolarSSL look up official ciphersuite names (rfc5246) */
+            ciphers[i] = ssl_get_ciphersuite_id(bdata(cipher));
+            if (!ciphers[i])
+                sentinel("Unrecognized ciphersuite: %s", bdata(cipher));
+        }
     }
 
     bstrListDestroy(ssl_cipher_list);
